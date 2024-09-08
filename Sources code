@@ -1,0 +1,48 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import train_test_split
+
+# Load the data
+file_path = r"C:\Users\Kishore\Downloads\Project-Management-Dataset-_1_.xlsx"
+df = pd.read_excel(file_path)
+
+# Select relevant features using column names
+features = ['Project Cost', 'Project Benefit', 'Complexity', 'Completion%']
+
+# Verify column names and adjust if necessary
+print(df.columns)
+
+# If the column names don't match exactly, you can use column indices
+# Assuming 'Project Cost' is in column G (index 6) and 'Project Benefit' is in column H (index 7)
+X = df.iloc[:, [6, 7, df.columns.get_loc('Complexity'), df.columns.get_loc('Completion%')]]
+
+# Rename columns for consistency
+X.columns = features
+
+# Handle non-numeric values in 'Complexity' column
+le = LabelEncoder()
+X['Complexity'] = le.fit_transform(X['Complexity'])
+
+# Convert all columns to numeric type
+X = X.astype(float)
+
+# Rest of the code remains the same
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+X_train, X_test = train_test_split(X_scaled, test_size=0.2, random_state=42)
+
+model = IsolationForest(contamination=0.1, random_state=42)
+model.fit(X_train)
+
+anomalies = model.predict(X_test)
+
+X_test_df = pd.DataFrame(X_test, columns=features)
+X_test_df['anomaly'] = anomalies
+
+early_warnings = X_test_df[X_test_df['anomaly'] == -1]
+
+print("Potential risks or issues detected:")
+print(early_warnings)
